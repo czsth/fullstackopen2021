@@ -2,7 +2,7 @@ import React from 'react'
 
 const Header = ({ course }) => {
     return (
-        <h1>{course.name}</h1>
+        <h3>{course.name}</h3>
     )
 }
 
@@ -16,10 +16,10 @@ const Total = ({ course }) => {
     )
 }
 
-const Part = (props) => {
+const Part = ({ part }) => {
     return (
         <p>
-            {props.part.name} {props.part.exercises}
+            {part.name} {part.exercises}
         </p>
     )
 }
@@ -27,9 +27,9 @@ const Part = (props) => {
 const Content = ({ course }) => {
     return (
         <div>
-            <Part part={course.parts[0]} />
-            <Part part={course.parts[1]} />
-            <Part part={course.parts[2]} />
+            {course.parts.map(
+                part => <Part key={part.id} part={part} />
+            )}
         </div>
     )
 }
