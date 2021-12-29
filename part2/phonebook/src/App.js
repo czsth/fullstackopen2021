@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import personService from './services/persons'
 
 const Filter = ({ query, onQueryChange }) => {
     return (
@@ -50,19 +50,37 @@ const PersonForm = (props) => {
     )
 }
 
-const Person = ({ person }) => {
+const Person = ({ person, onDeleteClick }) => {
     return (
-        <p>{person.name} {person.number}</p>
+        <tr>
+            <td>
+                {person.name}
+            </td>
+            <td>
+                {person.number}
+            </td>
+            <td>
+                <button onClick={event => onDeleteClick(event, person)}>
+                    delete
+                </button>
+            </td>
+        </tr>
     )
 }
 
-const Persons = ({ persons }) => {
+const Persons = ({ persons, onDeleteClick }) => {
     return (
-        <div>
-            {persons.map(person =>
-                <Person key={person.name} person={person} />
-            )}
-        </div>
+        <table>
+            <tbody>
+                {persons.map(person =>
+                    <Person
+                        key={person.name}
+                        person={person}
+                        onDeleteClick={onDeleteClick}
+                    />
+                )}
+            </tbody>
+        </table>
     )
 }
 
@@ -73,33 +91,46 @@ const App = () => {
     const [query, setQuery] = useState('')
 
     useEffect(() => {
-        console.log('effect')
-        axios
-            .get('http://localhost:3001/persons')
-            .then(response => {
-                console.log('promise fulfilled')
-                console.log(`${response.data.length} person(s) got`)
-                setPersons(response.data)
+        personService
+            .getAll()
+            .then(initialPersons => {
+                setPersons(initialPersons)
             })
     }, [])
 
     const addPerson = (event) => {
         event.preventDefault()
 
-        if (persons.map(person => person.name).includes(newName)) {
-            alert(`${newName} is already added to phone book`)
+        const isExisting = persons.map(person => person.name).includes(newName)
+        const msgToOverride = `${newName} is already added to phone book, replace the old number with a new one?`
+
+        if (isExisting && !window.confirm(msgToOverride)) {
+            return
+        }
+
+        const personObject = {
+            name: newName,
+            number: newNumber,
+            id: newName
+        }
+
+        if (isExisting) {
+            personService
+                .update(newName, personObject)
+                .then(rp => {
+                    setPersons(persons.map(p =>
+                        p.id !== newName ? p : rp))
+                    setNewName('')
+                    setNewNumber('')
+                })
         } else {
-            const personObject = {
-                name: newName,
-                number: newNumber,
-                id: persons.length + 1
-            }
-
-            const newPersons = persons.concat(personObject)
-
-            setPersons(newPersons)
-            setNewName('')
-            setNewNumber('')
+            personService
+                .create(personObject)
+                .then(returnedPerson => {
+                    setPersons(persons.concat(returnedPerson))
+                    setNewName('')
+                    setNewNumber('')
+                })
         }
     }
 
@@ -115,7 +146,27 @@ const App = () => {
         setQuery(event.target.value)
     }
 
-    const personsToShow = persons.filter(person => person.name.toLowerCase().includes(query.toLowerCase()))
+    const handlePersonDelete = (event, personToDelete) => {
+        const msgToDelete = `Delete ${personToDelete.name} ?`
+
+        if (!window.confirm(msgToDelete)) {
+            return
+        }
+
+        personService
+            .remove(personToDelete.id)
+            .then(status => {
+                console.log(status)
+                if (status === 200) {
+                    setPersons(persons.filter(person =>
+                        person.id !== personToDelete.id))
+                }
+            })
+    }
+
+    const personsToShow = persons.filter(person =>
+        person.name.toLowerCase().includes(query.toLowerCase())
+    )
 
     return (
         <div>
@@ -138,7 +189,10 @@ const App = () => {
 
             <h3>Numbers</h3>
 
-            <Persons persons={personsToShow} />
+            <Persons
+                persons={personsToShow}
+                onDeleteClick={handlePersonDelete}
+            />
         </div>
     )
 }
