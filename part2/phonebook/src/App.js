@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import personService from './services/persons'
+import './index.css'
 
 const Filter = ({ query, onQueryChange }) => {
     return (
@@ -84,11 +85,24 @@ const Persons = ({ persons, onDeleteClick }) => {
     )
 }
 
+const Notification = ({ message }) => {
+    if (message === null) {
+        return null
+    }
+
+    return (
+        <div className='notification'>
+            {message}
+        </div>
+    )
+}
+
 const App = () => {
     const [persons, setPersons] = useState([])
     const [newName, setNewName] = useState('')
     const [newNumber, setNewNumber] = useState('')
     const [query, setQuery] = useState('')
+    const [notificationMsg, setNotificationMsg] = useState(null)
 
     useEffect(() => {
         personService
@@ -123,6 +137,15 @@ const App = () => {
                     setNewName('')
                     setNewNumber('')
                 })
+                .catch(error => {
+                    setNotificationMsg(
+                        `Information of ${personObject.name} has already been removed from server`
+                    )
+                    setTimeout(() => {
+                        setNotificationMsg(null)
+                    }, 5000)
+
+                })
         } else {
             personService
                 .create(personObject)
@@ -130,6 +153,13 @@ const App = () => {
                     setPersons(persons.concat(returnedPerson))
                     setNewName('')
                     setNewNumber('')
+
+                    setNotificationMsg(
+                        `Added ${returnedPerson.name}`
+                    )
+                    setTimeout(() => {
+                        setNotificationMsg(null)
+                    }, 5000)
                 })
         }
     }
@@ -162,6 +192,15 @@ const App = () => {
                         person.id !== personToDelete.id))
                 }
             })
+            .catch(error => {
+                setNotificationMsg(
+                    `Information of ${personToDelete.name} has already been removed from server`
+                )
+                setTimeout(() => {
+                    setNotificationMsg(null)
+                }, 5000)
+
+            })
     }
 
     const personsToShow = persons.filter(person =>
@@ -171,6 +210,8 @@ const App = () => {
     return (
         <div>
             <h2>Phone Book</h2>
+
+            <Notification message={notificationMsg} />
 
             <Filter
                 query={query}
