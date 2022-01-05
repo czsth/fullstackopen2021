@@ -124,16 +124,17 @@ const App = () => {
 
         const personObject = {
             name: newName,
-            number: newNumber,
-            id: newName
+            number: newNumber
         }
 
         if (isExisting) {
+            const existingId = persons.filter(person => person.name === newName)[0].id
+
             personService
-                .update(newName, personObject)
-                .then(rp => {
+                .update(existingId, personObject)
+                .then(updatedPerson => {
                     setPersons(persons.map(p =>
-                        p.id !== newName ? p : rp))
+                        p.id !== existingId ? p : updatedPerson))
                     setNewName('')
                     setNewNumber('')
                 })
@@ -187,7 +188,7 @@ const App = () => {
             .remove(personToDelete.id)
             .then(status => {
                 console.log(status)
-                if (status === 200) {
+                if (status === 204) {
                     setPersons(persons.filter(person =>
                         person.id !== personToDelete.id))
                 }
