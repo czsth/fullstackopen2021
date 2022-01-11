@@ -91,8 +91,8 @@ const Notification = ({ message }) => {
     }
 
     return (
-        <div className='notification'>
-            {message}
+        <div className={message.type}>
+            {message.message}
         </div>
     )
 }
@@ -102,7 +102,7 @@ const App = () => {
     const [newName, setNewName] = useState('')
     const [newNumber, setNewNumber] = useState('')
     const [query, setQuery] = useState('')
-    const [notificationMsg, setNotificationMsg] = useState(null)
+    const [notification, setNotification] = useState(null)
 
     useEffect(() => {
         personService
@@ -133,19 +133,39 @@ const App = () => {
             personService
                 .update(existingId, personObject)
                 .then(updatedPerson => {
+                    if (updatedPerson === null) {
+                        // TODO: dirty fix
+                        setNotification({
+                            type: 'error',
+                            message: `${personObject.name} already removed from server, please refresh page.`
+                        })
+                        setTimeout(() => {
+                            setNotification(null)
+                        }, 5000)
+                        return
+                    }
                     setPersons(persons.map(p =>
                         p.id !== existingId ? p : updatedPerson))
                     setNewName('')
                     setNewNumber('')
+
+
+                    setNotification({
+                        type: 'success',
+                        message: `${updatedPerson.name} updated`
+                    })
+                    setTimeout(() => {
+                        setNotification(null)
+                    }, 5000)
                 })
                 .catch(error => {
-                    setNotificationMsg(
-                        `Information of ${personObject.name} has already been removed from server`
-                    )
+                    setNotification({
+                        type: 'error',
+                        message: error.response.data.error
+                    })
                     setTimeout(() => {
-                        setNotificationMsg(null)
+                        setNotification(null)
                     }, 5000)
-
                 })
         } else {
             personService
@@ -155,11 +175,21 @@ const App = () => {
                     setNewName('')
                     setNewNumber('')
 
-                    setNotificationMsg(
-                        `Added ${returnedPerson.name}`
-                    )
+                    setNotification({
+                        type: 'success',
+                        message: `Added ${returnedPerson.name}`
+                    })
                     setTimeout(() => {
-                        setNotificationMsg(null)
+                        setNotification(null)
+                    }, 5000)
+                })
+                .catch(error => {
+                    setNotification({
+                        type: 'error',
+                        message: error.response.data.error
+                    })
+                    setTimeout(() => {
+                        setNotification(null)
                     }, 5000)
                 })
         }
@@ -191,14 +221,23 @@ const App = () => {
                 if (status === 204) {
                     setPersons(persons.filter(person =>
                         person.id !== personToDelete.id))
+
+                    setNotification({
+                        type: 'success',
+                        message: `${personToDelete.name} successfully deleted`
+                    })
+                    setTimeout(() => {
+                        setNotification(null)
+                    }, 5000)
                 }
             })
             .catch(error => {
-                setNotificationMsg(
-                    `Information of ${personToDelete.name} has already been removed from server`
-                )
+                setNotification({
+                    type: 'error',
+                    message: error.response.data.error
+                })
                 setTimeout(() => {
-                    setNotificationMsg(null)
+                    setNotification(null)
                 }, 5000)
 
             })
@@ -212,7 +251,7 @@ const App = () => {
         <div>
             <h2>Phone Book</h2>
 
-            <Notification message={notificationMsg} />
+            <Notification message={notification} />
 
             <Filter
                 query={query}
